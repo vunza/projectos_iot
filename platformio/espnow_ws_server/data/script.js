@@ -90,20 +90,14 @@ webSocket.onclose = function (e) {
 }// Fim do Evento onclose
 
 
-// Evento onerror
-/*webSocket.onerror = function(event) {
-    //console.error("WebSocket error observed:", event);
-};// Fim do Evento onerror
-*/
-
-
 // Evento onmessage
 webSocket.onmessage = async function (d) {    
        
-     // Checar consistência do JSON proveniente do Servidor ESPxx    
-    var msg;       
+    // Checar consistência do JSON proveniente do Servidor ESPxx    
+    var msg; 
+
     try{
-        msg = JSON.parse(d.data);            
+        msg = JSON.parse(d.data);             
     }
     catch(err){
         console.log(`Erro parse_json: ${d.data}`);
@@ -171,7 +165,11 @@ webSocket.onmessage = async function (d) {
         }    
         
     }
-    else if (msg.CMD == "STT") {  
+    else if (msg.CMD == "STT") { 
+
+        // Remover, da DOM, elementos duplicados
+        removeDuplicateEelementes('grid_container');
+        
         //actualiza_pos_bd();
         ActualizaCard(msg.ID, msg); 
     }
@@ -514,6 +512,9 @@ async function CriarDevice(Id) {
     if(dev){ // Se Dev existe nao volta a criar
         return;
     }
+
+    // Remover, da DOM, elementos duplicados
+    removeDuplicateEelementes('grid_container'); 
 
     // Carrega a lista de dispositivos guardados na indexedDB
     DEVICES_LIST_AUX = await lerRegisto(devices_row_key); ; 
@@ -2017,5 +2018,31 @@ async function lerRegisto(reg_number){
         request.onsuccess = function (event) {            
             resolve(event.target.result);            
         }       
+    });
+}
+
+
+
+//////////////////////////////////
+// Elimina elementos duplicados //
+//////////////////////////////////
+function removeDuplicateEelementes(classe) {
+    // Coleta todos os elementos com o ID 'duplicate-id'
+    const elements = document.querySelectorAll(`${classe}`);
+    const seen = new Set();
+    const elementsToRemove = [];
+
+    // Identificar elementos duplicados
+    elements.forEach(element => {
+        if (seen.has(element.id)) {
+            elementsToRemove.push(element);
+        } else {
+            seen.add(element.id);
+        }
+    });
+
+    // Remover elementos duplicados
+    elementsToRemove.forEach(element => {
+        element.remove();
     });
 }
