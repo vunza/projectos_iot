@@ -127,22 +127,11 @@ webSocket.onmessage = async function (d) {
         
         // Guarda array de ID's dos Dispositivos, vindos do Servidpr ESP
         try{
-            if(get_srvr_id.toString().length == 7){  
-                                
-                for (let i = 0; i < size; i++) {                   
-                    
-                    dev_obj = { Id: msg.MSG_TYPE[i], Nome: '', Historico: '', Alive: 0 };
-                    
+            if(get_srvr_id.toString().length === 7){                                  
+                for (let i = 0; i < size; i++) {                    
+                    dev_obj = { Id: msg.MSG_TYPE[i], Nome: '', Historico: '', Alive: 0 };                    
                     DEVICES_LIST_FROM_ESP[i] = dev_obj;                                          
-                } 
-               
-                let pai = document.getElementById(get_srvr_id);
-                pai.querySelector(".srvr_indicator").style.display = 'block';
-                
-                // Se for Bridge ZigBee, ocultar a card correspondente, ocultar servidor
-                if( (get_srvr_id % 10) == 4){
-                    pai.style.display = 'none';                     
-                }                
+                }                    
             }                
         }
         catch(err){
@@ -156,7 +145,7 @@ webSocket.onmessage = async function (d) {
                 if(!elem) {
                     CriarDevice(DEVICES_LIST_FROM_ESP[j].Id); 
                     // Atribuir numero de ordem a card
-                    document.getElementById(DEVICES_LIST_FROM_ESP[j].Id + 100).style.order = j;
+                    //document.getElementById(DEVICES_LIST_FROM_ESP[j].Id + 100).style.order = j;
                 }                    
             }
             catch(e){
@@ -165,10 +154,17 @@ webSocket.onmessage = async function (d) {
         }    
         
     }
-    else if (msg.CMD == "STT") { 
+    else if (msg.CMD == "STT") {   
+        
+        let pai = document.getElementById(get_srvr_id);
+        let filho = pai.querySelector(".srvr_indicator");
 
-        // Remover, da DOM, elementos duplicados
-        removeDuplicateEelementes('grid_container');
+        // Se for Bridge ZigBee, ocultar a card correspondente, ocultar servidor
+        if (get_srvr_id % 10 === 4) {
+          pai.style.display = "none";
+        } else if (filho) {
+          filho.style.display = "block";
+        }             
         
         //actualiza_pos_bd();
         ActualizaCard(msg.ID, msg); 
@@ -213,6 +209,9 @@ webSocket.onmessage = async function (d) {
         //document.querySelectorAll('.grid_container').forEach( function (card) {    
             
             var Id = card.id - 100;    
+
+            // Remover, da DOM, elementos duplicados
+            removeDuplicateEelementes('grid_container');
 
             if(msg.ID == Id){                
                 var pai = document.getElementById(Id);
@@ -513,8 +512,6 @@ async function CriarDevice(Id) {
         return;
     }
 
-    // Remover, da DOM, elementos duplicados
-    removeDuplicateEelementes('grid_container'); 
 
     // Carrega a lista de dispositivos guardados na indexedDB
     DEVICES_LIST_AUX = await lerRegisto(devices_row_key); ; 
@@ -561,7 +558,7 @@ async function CriarDevice(Id) {
                 </table>               
             </div>
         </div>
-        </div>`;       
+        </div>`;         
     }
     else if(tipo == 3){ // ELECTROBOMBA
         container.innerHTML += `<div id=${Id + 100} oncontextmenu="clickDireito(${Id});" class="grid_container">
@@ -607,8 +604,7 @@ async function CriarDevice(Id) {
         </div>
         </div>`;
     }
-    else if(tipo == 2){ // HUB IR
-        nome = '[Nome]';
+    else if(tipo == 2){ // HUB IR        
         historico = '00:00:00, 00/00/0000';
         container.innerHTML += `<div id=${Id + 100} oncontextmenu="clickDireito(${Id});" class="grid_container">
         <div id=${Id} class="card card1" style="display: block;">
@@ -644,6 +640,7 @@ async function CriarDevice(Id) {
             
         </div>
         </div>`;
+       
     }  
     else if(tipo == 4){ // BRDGE_ZB (*J*) style="display: none;     
         container.innerHTML += `<div id=${Id + 100} oncontextmenu="clickDireito(${Id});" class="grid_container">
@@ -756,7 +753,7 @@ function ActualizaCard(Id, msg_obj){
 
         // Obter Nome do dispositivo na indexedDB          
         for(let cont = 0; cont < DEVICES_LIST_AUX.length; cont++){
-            if(DEVICES_LIST_AUX[cont].Id === msg.ID && DEVICES_LIST_AUX[cont].Nome !== ''){
+            if(DEVICES_LIST_AUX[cont].Id === Id && DEVICES_LIST_AUX[cont].Nome !== ''){
                 pai.querySelector('.div_nome').innerHTML = DEVICES_LIST_AUX[cont].Nome;
             }
         }
@@ -2028,16 +2025,16 @@ async function lerRegisto(reg_number){
 //////////////////////////////////
 function removeDuplicateEelementes(classe) {
     // Coleta todos os elementos com o ID 'duplicate-id'
-    const elements = document.querySelectorAll(`${classe}`);
+    const elements = document.querySelectorAll(`.${classe}`);
     const seen = new Set();
     const elementsToRemove = [];
-
+    
     // Identificar elementos duplicados
     elements.forEach(element => {
         if (seen.has(element.id)) {
-            elementsToRemove.push(element);
+            elementsToRemove.push(element);            
         } else {
-            seen.add(element.id);
+            seen.add(element.id);            
         }
     });
 
