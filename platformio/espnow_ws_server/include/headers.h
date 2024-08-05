@@ -14,7 +14,9 @@
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 //#include <swserial.h>
+//#include <ESP8266mDNS.h> 
 #include <ArduinoOTA.h>
+
 
 #if defined(ESP8266) 
   #include <ESP8266WiFi.h> 

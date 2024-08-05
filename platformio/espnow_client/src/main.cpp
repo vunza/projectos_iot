@@ -26,8 +26,8 @@ SHELLY1L  GPIO5       GPIO4         GPIO0     ESP8285 1M
 #define POWER320D 0
 #define BISTABLE_RELAY 0
 #define ESPNOW_TASMOTA_ZIGBEE_BRIDGE 0
-#define ESPNOW_TASMOTA_BRIDGE 1
-#define SWAP_UART 1
+#define ESPNOW_TASMOTA_BRIDGE 0
+#define SWAP_UART 0
 #define DEBUG 0
 #define IS_PASSIVE_MASTER 0
 #define INVERT_PIN 0
@@ -1319,7 +1319,7 @@ void LimpaDadosDispositivo(){
   //strncpy(data2eeprom.SOCKSERVERADDR, "", sizeof(data2eeprom.SOCKSERVERADDR));
   //data2eeprom.SOCKSERVERPORT = 0;
 
-  data2eeprom.TIPO = E_BOMBA;//lAMPADA;// PASSIVO;//E_BOMBA;//HUB_IR; // Lâmpada por defeito
+  data2eeprom.TIPO = lAMPADA;//lAMPADA;// PASSIVO;//E_BOMBA;//HUB_IR; // Lâmpada por defeito
  
   EEPROM.put(EEPROM_START_ADDR, data2eeprom);  
   EEPROM.commit();

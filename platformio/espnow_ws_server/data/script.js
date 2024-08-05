@@ -124,7 +124,7 @@ webSocket.onmessage = async function (d) {
         const size = msg.MSG_TYPE.length; 
         get_srvr_id = msg.MSG_TYPE[0];           
         total_grids_dom = msg.MSG_TYPE.length; 
-        
+ 
         // Guarda array de ID's dos Dispositivos, vindos do Servidpr ESP
         try{
             if(get_srvr_id.toString().length === 7){                                  
@@ -155,7 +155,7 @@ webSocket.onmessage = async function (d) {
         
     }
     else if (msg.CMD == "STT") {   
-        
+       
         let pai = document.getElementById(get_srvr_id);
         let filho = pai.querySelector(".srvr_indicator");
 
@@ -207,7 +207,7 @@ webSocket.onmessage = async function (d) {
         //const cards = [];
         document.querySelectorAll('.grid_container').forEach( async function (card) {
         //document.querySelectorAll('.grid_container').forEach( function (card) {    
-            
+   
             var Id = card.id - 100;    
 
             // Remover, da DOM, elementos duplicados
@@ -218,7 +218,14 @@ webSocket.onmessage = async function (d) {
                 pai.style.pointerEvents = "auto";
                 pai.disabled = false;
                 pai.style.opacity = 1;  
-                pai.querySelector('.div_nome').innerHTML = msg.MAC;
+
+                let num = Id;
+                let numStr = num.toString();
+                const marca = `${numStr[4]}${numStr[5]}`;
+                if(marca !== MARCAZB ){
+                    pai.querySelector('.div_nome').innerHTML = msg.MAC;    
+                }
+                
                 pai.querySelector('.div_historico').innerHTML = msg.MSG;                    
                 pai.querySelector('.div_img').innerHTML = alterarImagem(msg.PST, Id); 
                                      
@@ -257,8 +264,36 @@ webSocket.onmessage = async function (d) {
                     actualizarRegisto(devices_row_key, DEVICES_LIST_FROM_ESP);
                           
                     // Carrega a lista de dispositivos guardados na indexedDB
-                    var size_obj = await lerRegisto(devices_row_key); ; 
-                    //var size_obj = DEVICES_LIST_AUX;                             
+                    var size_obj = await lerRegisto(devices_row_key); 
+                    
+                    // Criar dispositivo atraves do registo da indexedDB
+                    var getId = 0;
+                    var getName = '';
+                    for(var cont = 0; cont < size_obj.length; cont++){                        
+                        var elemento = document.getElementById( (size_obj[cont].Id + 100) );
+                        if( elemento){
+                            getId = 0;                           
+                        }
+                        else{
+                            getId = size_obj[cont].Id;
+                            getName = size_obj[cont].Nome;
+                        }                        
+                    }
+                    
+                    if(getId > 0){
+                        CriarDevice(getId);
+
+                        const data_json = {
+                            MSG: "",
+                            CMD: "AFO",
+                            MAC: getName,
+                            ID: getId,
+                            PST: 0,
+                            WCH: 0
+                        };
+            
+                        webSocket.send(JSON.stringify(data_json));
+                    }
 
                     // Elimina null
                     for (let cont = 0; cont < size_obj.length; cont++) {
@@ -308,7 +343,7 @@ webSocket.onmessage = async function (d) {
                             } 
                                 
                             // Guarda o device se nao existe no array da localstorage e se onome nao é "lixo", restos de operação anterior
-                            if(dev_existe == false && devNome.indexOf('Nome') === -1 && devNome.indexOf('"}') === -1 && devNome.indexOf('}') === -1 && devNome.length > 0){
+                            if(dev_existe == false && devNome.indexOf('Nome') == -1 && devNome.indexOf('"}') === -1 && devNome.indexOf('}') === -1 && devNome.length > 0){
                                 size_obj.push(dev_obj);
                                 dev_existe = true;                                
                             }
@@ -749,8 +784,7 @@ function ActualizaCard(Id, msg_obj){
         pai.querySelector('.div_img').innerHTML = alterarImagem(msg_obj.PST, Id);
         pai.querySelector('.div_nome').innerHTML = msg_obj.MAC; // Nome;
         pai.querySelector('.div_historico').innerHTML = msg_obj.MSG; // DT;
-
-
+        
         // Obter Nome do dispositivo na indexedDB          
         for(let cont = 0; cont < DEVICES_LIST_AUX.length; cont++){
             if(DEVICES_LIST_AUX[cont].Id === Id && DEVICES_LIST_AUX[cont].Nome !== ''){
@@ -1982,13 +2016,33 @@ function criarBancoDados(){
 // Actualizar Registo no indexedDB //
 /////////////////////////////////////
 function actualizarRegisto(reg_number, obj_data){ 
-    criarBancoDados();  
+    
+    criarBancoDados();     
+
+    // Actualiza s dados da indexedDB, com os recem recebidos do Servidor ESP
+    for(var i = 0; i < obj_data.length; i++){
+
+        for(var j = 0; j < DEVICES_LIST_AUX.length; j++){
+            if(DEVICES_LIST_AUX[j].Id == obj_data[i].Id &&  obj_data[i].Nome != '' && obj_data[i].Nome.length > 0){
+                DEVICES_LIST_AUX[j].Nome = obj_data[i].Nome;
+                DEVICES_LIST_AUX[j].Historico = obj_data[i].Historico;
+            }
+        }
+
+        // Verificar o nome do dispositivo na indexedDB, se existe atribui-lo... 
+        const devobj = DEVICES_LIST_AUX.find((objeto) => objeto["Id"] === obj_data[i].Id);
+        if (!devobj && obj_data[i].Nome != '' && obj_data[i].Nome != '[Nome]' && obj_data[i].Nome.length > 0) {   
+            DEVICES_LIST_AUX.push(obj_data[i]);     
+        }   
+    }    
+
     var request = window.indexedDB.open(db_name, reg_number);
     request.onsuccess = function (event){
         return new Promise((resolve, reject) => {
             resolve(db = request.result);                
             let transaction = db.transaction(tbl_name, 'readwrite');
-            let store = transaction.objectStore(tbl_name);        
+            let store = transaction.objectStore(tbl_name);   
+            obj_data = DEVICES_LIST_AUX;     
             store.put(obj_data, reg_number);              
         }); 
     };    	

@@ -295,7 +295,6 @@ StaticJsonDocument <JSON_DOC_SIZE> json_doc;
 bool exec_toggle = false;
 uint8_t relayState = 0; 
 
-
 #if ESPNOW_TASMOTA_ZIGBEE_BRIDGE == 1 
 
   #define SHORT_DEV_ID_SIZE 7
@@ -1206,8 +1205,8 @@ void setup() {
   contador = millis(); 
 
   // TODO: Debug only
-  /*ArduinoOTA.setHostname("OTA_D1MINI");
-  ArduinoOTA.begin();*/
+  //ArduinoOTA.setHostname("OTA_D1MINI");
+  //ArduinoOTA.begin();
   
   // Inicializa Telnet  
   #if TELNET == 1
@@ -1217,6 +1216,7 @@ void setup() {
   // Aumenta Potencia de Tx do WiFi
   aumentarPotenciaTxWiFi(); 
 
+  
 }
 
 
@@ -1238,7 +1238,21 @@ void loop() {
       TogglePIN();      
     }
 
-    #if ESPNOW_TASMOTA_ZIGBEE_BRIDGE == 1      
+     
+    
+    // Checar Timer cada X tempo
+    if( (millis() - cont_exec_timer)/1000 > 1 ){
+      cont_exec_timer = millis();      
+      //ExecutarTimer(FILE_DATA_SPIFFS);  
+      #if ESPNOW_TASMOTA_ZIGBEE_BRIDGE == 1  
+        ExecutarTimerZb(FILE_ZBTMRS_SPIFFS); 
+      #endif    
+
+      // WebSocket
+      ws_obj.cleanupClients();
+      wss_obj.cleanupClients();
+
+      #if ESPNOW_TASMOTA_ZIGBEE_BRIDGE == 1      
 
       while (Serial.available() > 0){
 
@@ -1254,18 +1268,9 @@ void loop() {
 
     #endif 
 
-    // WebSocket
-    ws_obj.cleanupClients();
-    wss_obj.cleanupClients();
-    
-    // Checar Timer cada X tempo
-    if( (millis() - cont_exec_timer)/1000 > 1 ){
-      cont_exec_timer = millis();      
-      //ExecutarTimer(FILE_DATA_SPIFFS);  
-      #if ESPNOW_TASMOTA_ZIGBEE_BRIDGE == 1  
-        ExecutarTimerZb(FILE_ZBTMRS_SPIFFS); 
-      #endif    
     }
+
+
 
     // Envia msg alive cada X tempo.
     if( (millis() - cont_send_alive)/1000 >= TEMPO_ENVIAR_ALIVE ){  
@@ -1283,6 +1288,22 @@ void loop() {
         if(actualizaDTfromNTP("pool.ntp.org") == false){
           SendData2WebSocket(BOARD_ID, estado, "UDT", "","", 0);
         }         
+      }
+
+
+      // Controlar RAM livre
+      #if defined(ESP8266)      
+        // Obter a quantidade de memória livre
+        uint32_t freeHeap = ESP.getFreeHeap();
+        freeHeap /= 1024;      
+      #elif defined(ESP32)      
+        // Obter a quantidade de memória livre
+        uint32_t freeHeap = ESP.getFreeHeap();
+        freeHeap /= 1024;     
+      #endif
+
+      if(freeHeap <= 29){
+        ESP.restart();
       }
 
 
@@ -1433,21 +1454,7 @@ void loop() {
         }
       
       } 
-
-      // Controlar RAM livre
-      #if defined(ESP8266)      
-        // Obter a quantidade de memória livre
-        uint32_t freeHeap = ESP.getFreeHeap();
-        freeHeap /= 1024;      
-      #elif defined(ESP32)      
-        // Obter a quantidade de memória livre
-        uint32_t freeHeap = ESP.getFreeHeap();
-        freeHeap /= 1024;     
-      #endif
-
-      if(freeHeap <= 29){
-        ESP.restart();
-      }
+      
 
       // TODO: Checar hora e data 
       /*char dt[21];
@@ -2086,8 +2093,7 @@ void cb_scan_wifi(uint8_t networksFound){
     int8_t index = ArrayHasElement(array_alive[0].BOARDS_ID, iz_id_dev);    
 
     if (index != -1 && index != -2){      
-      array_alive[0].BOARDS_ID[index] = iz_id_dev;   
-      //EscreverSPIFFS(&data2spiffs, FILE_DATA_SPIFFS);
+      array_alive[0].BOARDS_ID[index] = iz_id_dev;         
     }
 
     // Se o dev não está registado
@@ -2313,8 +2319,7 @@ void cb_scan_wifi(uint8_t networksFound){
     int8_t index = ArrayHasElement(array_alive[0].BOARDS_ID, iz_id_dev);    
 
     if (index != -1 && index != -2){      
-      array_alive[0].BOARDS_ID[index] = iz_id_dev;   
-      //EscreverSPIFFS(&data2spiffs, FILE_DATA_SPIFFS);
+      array_alive[0].BOARDS_ID[index] = iz_id_dev;         
     }
 
     // Se o dev não está registado
@@ -3307,7 +3312,13 @@ void handleingIncomingData(void *arg, uint8_t *rx_data, size_t len, uint32_t cli
           }
         #endif            
       }           
-    }    
+    }  
+    // Simula estado OFF do dispositivo criado a partir da indexedDB
+    else if( strcmp(cz_cmd, "AFO") == 0 ){ 
+      uint32_t uz_id = json_doc["ID"];
+      const char* name = json_doc["MAC"];
+      SendData2WebSocket(uz_id, 2, "OFF", name, "", 0);
+    }  
     else if( strcmp(cz_cmd, "UPT") == 0 ){          
       // Correcção da Data
       if (year() < YEAR_COMPARE){    
@@ -4434,10 +4445,8 @@ void aumentarPotenciaTxWiFi(){
             char data[17] = "";    
             sprintf(data, "ZbStatus3 %s", arr_zb_devs[cont].short_id);  
             Serial.write(data, 16); 
-            Serial.write('\n'); 
-            
-            break;
-          }    
+            Serial.write('\n');            
+          } 
 
           strcpy(czjson, CriarJSON(data2spiffs.DT, "PRZ", name, arr_zb_devs[cont].zb_board_id, power, WiFi.channel()));
           
@@ -4446,20 +4455,20 @@ void aumentarPotenciaTxWiFi(){
           #elif defined(ESP32) 
             callback_rx_esp_now(0, (uint8_t *)czjson, strlen(czjson));
           #endif    
-          delay(10); 
-
+         
           char cz_dt[DT_STR_SIZE];
           ObterDTActual(cz_dt);
           cz_dt[strlen(cz_dt)] = '\0';            
                    
           strcpy(czjson, CriarJSON(cz_dt, "SAC", arr_zb_devs[cont].name, arr_zb_devs[cont].zb_board_id, power, WiFi.channel()));
+          //strcpy(czjson, CriarJSON(cz_dt, "SAC", name, arr_zb_devs[cont].zb_board_id, power, WiFi.channel()));
           
           #if defined(ESP8266) 
             callback_rx_esp_now(0, (uint8_t *)czjson, strlen(czjson));
           #elif defined(ESP32) 
             callback_rx_esp_now(0, (uint8_t *)czjson, strlen(czjson));
           #endif    
-          delay(10);
+          
 
           // Actualiza informacoes os devices
           strcpy(arr_zb_devs[cont].name, name);
@@ -4521,7 +4530,15 @@ void aumentarPotenciaTxWiFi(){
           }
           else{
             char czjson[JSON_DOC_SIZE]; 
-            strcpy(czjson, CriarJSON(data2spiffs.DT, "SAC", name, arr_zb_devs[cont].zb_board_id, power, WiFi.channel()));
+            char cz_dt[DT_STR_SIZE];
+            ObterDTActual(cz_dt);
+            cz_dt[strlen(cz_dt)] = '\0';
+
+            //strcpy(czjson, CriarJSON(data2spiffs.DT, "SAC", name, arr_zb_devs[cont].zb_board_id, power, WiFi.channel()));
+            strcpy(czjson, CriarJSON(cz_dt, "SAC", name, zb_board_id, power, WiFi.channel()));
+            
+            // Envioar "STT" dos dispositivos ZigBee                        
+            SendData2WebSocket(arr_zb_devs[cont].zb_board_id, power, cz_dt, name, "", 0);
             
             #if defined(ESP8266) 
               callback_rx_esp_now(0, (uint8_t *)czjson, strlen(czjson));
