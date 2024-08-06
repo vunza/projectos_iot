@@ -2049,7 +2049,6 @@ function actualizarRegisto(reg_number, obj_data){
 }
 
 
-
 ////////////////////////////////////////////
 // Ler um Registo especifico na indexedDB //
 ////////////////////////////////////////////
@@ -2071,7 +2070,6 @@ async function lerRegisto(reg_number){
         }       
     });
 }
-
 
 
 //////////////////////////////////
