@@ -25,11 +25,11 @@ M51C      GPIO23      GPIO0         GPIO19    ESP32   4M
 #define POWER320D 0
 #define BISTABLE_RELAY 0
 #define ESPNOW_TASMOTA_ZIGBEE_BRIDGE 1
-#define SWAP_UART 1
+#define SWAP_UART 0
 #define HIDEN_SERVER 0
 #define IS_PASSIVE_MASTER 0
 #define PASSIVE_SLAVE_ID 0 //4164129
-#define DEBUG 0
+#define DEBUG 1
 #define TELNET 0
 #define CTRLDIAS 0
 
@@ -281,8 +281,11 @@ const char* ap_ip_mode = "DEFAULT";     // IP_MODE = [DEFAULT | CUSTOM]
 const char* sta_ip_mode = "DHCP";       // STA_IP_MODE = [DHCP | STATIC]
 #define EEPROM_TIMERS_ADDR sizeof(data2EEPROM) + 2
 uint8_t iz_conex = 0;
-uint8_t novoMAC[MAC_BYTE_SIZE] = {0x12, 0x34, 0x56, 0x78, 0x9A, 0xB0};//Produção
+//uint8_t novoMAC[MAC_BYTE_SIZE] = {0x12, 0x34, 0x56, 0x78, 0x9A, 0xB0};//Produção
 //uint8_t novoMAC[MAC_BYTE_SIZE] = {0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC};//Testes
+
+uint8_t novoMAC[MAC_BYTE_SIZE] = {0x78, 0xE3, 0x6D, 0x12, 0x29, 0x30};//Testes
+
 uint8_t uz_MACADDR[MAC_BYTE_SIZE];
 char cz_MACADDR[18];
 uint32_t id_cliente_ws = 0;
@@ -316,6 +319,7 @@ uint8_t relayState = 0;
 
 #if defined(ESP32) 
   esp_now_peer_info_t peerInfo;
+  uint32_t esp32_get_uz_id;
 #endif
 
 
@@ -350,20 +354,15 @@ void onEvent1(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTy
 
 
 
-// CallBack dados Enviados ESP-NOW
+// CallBack rx/tx ESP-NOW
 #if defined(ESP8266) 
  void callback_tx_esp_now(uint8_t *mac_addr, uint8_t status); 
-#elif defined(ESP32) 
-  void callback_tx_esp_now(const uint8_t *mac_addr, esp_now_send_status_t status);
-#endif
- 
-
-// CallBack dados Recebidos ESP-NOW
-#if defined(ESP8266) 
  void callback_rx_esp_now(uint8_t * mac, uint8_t *incomingData, uint8_t len);
 #elif defined(ESP32) 
+  void callback_tx_esp_now(const uint8_t *mac_addr, esp_now_send_status_t status);
   void callback_rx_esp_now(const uint8_t * mac, const uint8_t *incomingData, int len);
 #endif
+ 
 
 
 // Converter MAC (string para Byte array)
@@ -463,7 +462,7 @@ void aumentarPotenciaTxWiFi();
 #endif
 
 
-#ifdef ESP32
+#if defined(ESP32) 
   void guardar_endereco_mac(uint8_t newMAC[6],  uint32_t dev_id);
 #endif
 
@@ -506,21 +505,18 @@ void setup() {
   #if ESPNOW_TASMOTA_ZIGBEE_BRIDGE == 1
     Serial.begin(115200);     
   #else
-      Serial.begin(115200);
+    Serial.begin(115200);
   #endif
 
-  #if SWAP_UART == 1
-    Serial.swap(); // Para alguns Wemos D1 Mini GPIO15(D8,TX) and GPIO13(D7,RX)          
-  #endif
-
-  while(!Serial);
-
-
+  
   #if defined(ESP8266) 
-    delay(100);
-  #elif defined(ESP32) 
-    vTaskDelay(100);
+    #if SWAP_UART == 1
+      Serial.swap(); // Para alguns Wemos D1 Mini GPIO15(D8,TX) and GPIO13(D7,RX)          
+    #endif
   #endif
+
+  delay(1000);//while(!Serial);
+
 
   //sprintf(cz_novoMAC, "%02X:%02X:%02X:%02X:%02X:%02X", novoMAC[0], novoMAC[1], novoMAC[2], novoMAC[3], novoMAC[4], novoMAC[5]);
 
@@ -1073,11 +1069,7 @@ void setup() {
             EEPROM.put(EEPROM_START_ADDR, data2eeprom);
             EEPROM.commit();
             
-            #if defined(ESP8266) 
-              delay(5);
-            #elif defined(ESP32) 
-              vTaskDelay(5);
-            #endif
+            delay(5);
 
             request->send(200, "text/plain", "Operação Concluída.");  
             json_doc.clear();   
@@ -1447,7 +1439,7 @@ void loop() {
             #elif defined(ESP32) 
               // cont = 1 -- xq o eleento 0 não conta
               for(uint8_t cont = 1; cont < num_enderecos_mac; cont++){
-                if( devs_id[cont] == uz_id ) esp_now_send(enderecos_mac[cont], (uint8_t *)czjson, strlen(czjson));
+                if( devs_id[cont] == esp32_get_uz_id ) esp_now_send(enderecos_mac[cont], (uint8_t *)czjson, strlen(czjson));
               }
             #endif      
           }          
@@ -1656,10 +1648,19 @@ void RedeWifi::ConectaRedeWifi(const char* STA_IP_MODE) { // STA_IP_MODE = [DHCP
   WiFi.mode(WIFI_AP_STA); 
   bool ssid_hidden  = true;
   uint8_t wifi_channel = 1;
-  WiFi.softAP(data2eeprom.nome, "123456789", wifi_channel, ssid_hidden);     
-    
+  WiFi.softAP(data2eeprom.nome, "123456789", wifi_channel, ssid_hidden); 
+  
+  /*WiFi.mode(WIFI_STA);
+  Serial.print("\nOLD ESP32 MAC Address: ");
+  Serial.println(WiFi.macAddress());
+  esp_wifi_set_mac(WIFI_IF_STA, &novoMAC[0]);
+  Serial.print("NEW ESP32 MAC Address: ");
+  Serial.println(WiFi.macAddress());*/
+
+
+  //WiFi.mode(WIFI_AP_STA);  
   // ESP32 Board add-on after version > 1.0.5
-  esp_wifi_set_mac(WIFI_IF_AP, &novoMAC[0]);
+  //esp_wifi_set_mac(WIFI_IF_STA, &novoMAC[0]);
   // ESP32 Board add-on before version < 1.0.5
   //esp_wifi_set_mac(ESP_IF_WIFI_AP, &novoMAC[0]);
 #endif
@@ -1706,8 +1707,8 @@ void RedeWifi::ConectaRedeWifi(const char* STA_IP_MODE) { // STA_IP_MODE = [DHCP
       memcpy(uz_MACADDR, converteMacString2Byte(WiFi.macAddress().c_str()), sizeof(uz_MACADDR));
       strcpy(cz_MACADDR, WiFi.macAddress().c_str()); 
     #elif defined(ESP32) 
-      memcpy(uz_MACADDR, converteMacString2Byte(WiFi.softAPmacAddress().c_str()), sizeof(uz_MACADDR));
-      strcpy(cz_MACADDR, WiFi.softAPmacAddress().c_str());
+      memcpy(uz_MACADDR, converteMacString2Byte(WiFi.macAddress().c_str()), sizeof(uz_MACADDR));
+      strcpy(cz_MACADDR, WiFi.macAddress().c_str());
     #endif     
 
     imprimeln("");
@@ -1717,7 +1718,7 @@ void RedeWifi::ConectaRedeWifi(const char* STA_IP_MODE) { // STA_IP_MODE = [DHCP
     imprimeln("SSID: " + WiFi.SSID() + "\nIP: " + WiFi.localIP().toString());
     imprime("MAC: ");  
     imprimeln(cz_MACADDR);   
-  
+     
 
     // Reconectar a Rede WiFi
     WiFi.setAutoReconnect(true);
@@ -1794,7 +1795,7 @@ void RedeWifi::CriaRedeWifi(const char* AP_IP_MODE) {// AP_IP_MODE = [DEFAULT | 
   imprimeln("SSID: " + WiFi.softAPSSID() + "\nIP: " + WiFi.softAPIP().toString());
   imprime("MAC: ");
   imprimeln(cz_MACADDR);
-  
+   
 }
 
 
@@ -2173,7 +2174,6 @@ void cb_scan_wifi(uint8_t networksFound){
     if(index != -1 && index != -2 && index < QTD_BOARDS && iz_id_dev != 0){
       array_alive[0].BOARDS_ID[index] = iz_id_dev;  
       array_alive[index].board_id =  iz_id_dev;
-      //EscreverSPIFFS(&data2spiffs, FILE_DATA_SPIFFS);  
     } 
     else{
       if(index >= QTD_BOARDS){ // TODO: Analisar/Rever logica
@@ -2243,7 +2243,9 @@ void cb_scan_wifi(uint8_t networksFound){
 }// end callback_rx_esp_now(...)
 #elif defined(ESP32) 
   void callback_rx_esp_now(const uint8_t * mac, const uint8_t *incomingData, int len){ 
-  //data2SPIFFS data2spiffs = {0};
+  
+  Serial.println((const char*)incomingData);
+  
   char czjson[JSON_DOC_SIZE];
    
   deserializeJson(json_doc, (const char*)incomingData);
@@ -2432,7 +2434,7 @@ void cb_scan_wifi(uint8_t networksFound){
 
     strcpy(aux_dt, cz_tipo_msg);
     aux_dt[strlen(aux_dt)] = '\0';
-    SendData2WebSocket(iz_id_dev, iz_pin_state, "SAC", cz_mac, "", 0); 
+    SendData2WebSocket(iz_id_dev, iz_pin_state, "SAC", cz_mac, cz_tipo_msg, iz_canal_wifi); 
 
     // Guardar tempos Alive dos clientes   
     for(uint8_t cont = 0; cont < QTD_BOARDS; cont++){
@@ -3167,6 +3169,7 @@ void handleingIncomingData(void *arg, uint8_t *rx_data, size_t len, uint32_t cli
      
     const char* cz_cmd = json_doc["CMD"];
     uint32_t uz_id = json_doc["ID"];
+    esp32_get_uz_id = uz_id;
 
     // Obter marca de devices zigbee, de tras para frente
     uint8_t quarto = obterDigitoInvertido(uz_id, 1);
@@ -3544,7 +3547,7 @@ void handleingIncomingData(void *arg, uint8_t *rx_data, size_t len, uint32_t cli
         #elif defined(ESP32) 
           // cont = 1 -- xq o eleento 0 não conta
           for(uint8_t cont = 1; cont < num_enderecos_mac; cont++){
-            if( devs_id[cont] == uz_id ) esp_now_send(enderecos_mac[cont], data, len);
+            if( devs_id[cont] == uz_id ) esp_now_send(enderecos_mac[cont], rx_data, len);
           }
         #endif      
       }     
@@ -4022,7 +4025,7 @@ uint32_t CriarDEVICE_ID(){
       BOARD_ID = (BOARD_ID * 10) + atoi(tipo);
     }    
   }
-
+ 
   return BOARD_ID;
 
 }
@@ -4461,7 +4464,6 @@ void aumentarPotenciaTxWiFi(){
           cz_dt[strlen(cz_dt)] = '\0';            
                    
           strcpy(czjson, CriarJSON(cz_dt, "SAC", arr_zb_devs[cont].name, arr_zb_devs[cont].zb_board_id, power, WiFi.channel()));
-          //strcpy(czjson, CriarJSON(cz_dt, "SAC", name, arr_zb_devs[cont].zb_board_id, power, WiFi.channel()));
           
           #if defined(ESP8266) 
             callback_rx_esp_now(0, (uint8_t *)czjson, strlen(czjson));
@@ -4534,7 +4536,6 @@ void aumentarPotenciaTxWiFi(){
             ObterDTActual(cz_dt);
             cz_dt[strlen(cz_dt)] = '\0';
 
-            //strcpy(czjson, CriarJSON(data2spiffs.DT, "SAC", name, arr_zb_devs[cont].zb_board_id, power, WiFi.channel()));
             strcpy(czjson, CriarJSON(cz_dt, "SAC", name, zb_board_id, power, WiFi.channel()));
             
             // Envioar "STT" dos dispositivos ZigBee                        

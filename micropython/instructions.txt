@@ -1,0 +1,54 @@
+https://thonny.org/
+https://micropython.org/download/
+
+$ sudo apt -y install python3-pip
+$ sudo pip install esptool
+
+python3 -m esptool --port /dev/ttyUSB0 erase_flash
+
+python3 -m esptool --port /dev/ttyUSB0 flash_id -- mostra especificações do chip (espressif)
+
+ESP8266 (FLASH = 4MB):
+======================
+$ esptool --port /dev/ttyUSB0 write_flash --flash_mode dio --flash_size 4MB 0x0 ESP8266_GENERIC-20240602-v1.23.0.bin
+
+
+
+
+import machine
+pin0 = machine.Pin(2, machine.Pin.OUT) #open GPIO0 in output mode
+import time
+
+while True:
+    time.sleep(0.5)
+    pin0.on()
+    time.sleep(0.5)
+    pin0.off()
+
+
+
+import network
+
+import esp
+esp.osdebug(None)
+
+import gc
+gc.collect()
+
+# MODO STA
+sta_if = network.WLAN(network.STA_IF)
+sta_if.active(True)
+sta_if.scan()                             
+sta_if.connect("TPLINK", "gregorio@2012") 
+sta_if.isconnected()  
+
+
+# MODO AP 
+ap = network.WLAN(network.AP_IF)
+ap.active(True)
+ap.config(essid='ESP12E', password='123456789')
+
+while ap.active() == False:
+  pass
+
+

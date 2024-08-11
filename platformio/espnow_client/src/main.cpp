@@ -28,7 +28,7 @@ SHELLY1L  GPIO5       GPIO4         GPIO0     ESP8285 1M
 #define ESPNOW_TASMOTA_ZIGBEE_BRIDGE 0
 #define ESPNOW_TASMOTA_BRIDGE 0
 #define SWAP_UART 0
-#define DEBUG 0
+#define DEBUG 1
 #define IS_PASSIVE_MASTER 0
 #define INVERT_PIN 0
 #define TELNET 0
@@ -51,7 +51,7 @@ SHELLY1L  GPIO5       GPIO4         GPIO0     ESP8285 1M
 #else
   #define PIN_RELAY   12
   #define PIN_BUTTON  0            
-  #define PIN_LED     13//2
+  #define PIN_LED     2//13//1
 #endif
 
 
@@ -235,8 +235,11 @@ uint64_t cont_send_alive = 0;
 AsyncWebServer servidorHTTP(8090);
 const char* CMND = "cmnd";               // Comandos recebidos por via do Javascript
 uint8_t save_channel;
-uint8_t broadcastAddress[MAC_BYTE_SIZE] = {0x12, 0x34, 0x56, 0x78, 0x9A, 0xB0}; // Produção
+//uint8_t broadcastAddress[MAC_BYTE_SIZE] = {0x12, 0x34, 0x56, 0x78, 0x9A, 0xB0}; // Produção
 //uint8_t broadcastAddress[MAC_BYTE_SIZE] = {0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC}; // Teste
+
+uint8_t broadcastAddress[MAC_BYTE_SIZE] = {0x78, 0xE3, 0x6D, 0x12, 0x29, 0x30}; // Teste 
+
 char pairingStatus[MSG_LENGTH] = "PRT";
 unsigned long ctrl_send_alive = 0;
 unsigned long ctrl_server_alive = 0;
