@@ -6,8 +6,8 @@
 }
 
 * {
-  margin: 0;
-  padding: 0;
+  /*margin: 0;
+  padding: 0;*/
   box-sizing: border-box;
 
   /* Impede Seleccção e Copia */
@@ -23,7 +23,7 @@ body {
 }
 
 /*----------------------------------- div_geral ----------------------------------*/
-#div_geral {
+/*#div_geral {
   position: fixed;
   top: 0px;
   width: 100%;
@@ -38,7 +38,7 @@ body {
   position: relative;
   width: var(--larg_card_wrapper);
   height: 95%;
-  /*padding: 5px;*/ 
+  
   align-items: center;
   justify-content: center;
   display:block;
@@ -115,7 +115,7 @@ body {
 .grid_container {  
   display: grid;
   grid-template-rows: 50% 50%;
-  /*grid-template-columns: 50% 50%;*/
+  
   padding-top: 5px;
   gap: 5px;
   justify-content: center;  
@@ -146,4 +146,65 @@ body {
 
 #tr_historico2{
   display: block;  
+}*/
+
+
+
+/*************************************************************/
+
+html {
+  font-family: Arial;
+  display: inline-block;
+  text-align: center;
 }
+
+p {
+  font-size: 1.2rem;
+}
+
+body {
+  margin: 0;
+}
+
+.topnav {
+  overflow: hidden;
+  background-color: #2f4468;
+  color: white;
+  font-size: 1.7rem;
+}
+
+.content {
+  padding: 20px;
+}
+
+.card {
+  background-color: white;
+  box-shadow: 2px 2px 12px 1px rgba(140, 140, 140, .5);
+}
+
+.cards {
+  max-width: 700px;
+  margin: 0 auto;
+  display: grid;
+  grid-gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.reading {
+  font-size: 2.8rem;
+}
+
+.packet {
+  color: #bebebe;
+}
+
+.card.temperature {
+  color: #fd7e14;
+}
+
+.card.humidity {
+  color: #1b78e2;
+}
+
+
+/*************************************************************/
