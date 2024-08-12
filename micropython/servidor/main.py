@@ -1,7 +1,6 @@
 import network, socket
 
-tamnho_chunk = 1024
-
+tamnho_chunk = 512
 
 #############################
 # Conectar/Criar rede Wi-Fi #
@@ -9,14 +8,14 @@ tamnho_chunk = 1024
 sta_if = network.WLAN(network.STA_IF)
 sta_if.active(True)
 sta_if.scan()
-#sta_if.connect("TPLINK", "gregorio@2012")
-sta_if.connect("Welwitschia Mirabilis", "tigre?2018@")
+sta_if.connect("TPLINK", "gregorio@2012")
+#sta_if.connect("Welwitschia Mirabilis", "tigre?2018@")
 while sta_if.isconnected() == False:
     print('conectando...')
     pass
 
 #print('Coxeão a rede WiFi %s estabelecida' % ssid)
-print(sta_if.ifconfig())  # Mostra dados da conexão
+print('IP: ' + sta_if.ifconfig()[0])  # Mostra dados da conexão
 
 
 ####################
