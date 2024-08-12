@@ -1,6 +1,6 @@
 1 - Enviar, atraves do bridge tasmota-espnow, mensagem para ligarse/desligarse a rede wifi;
 2 - Web log level 2 ?
-3 - Console logging level - 2 ?
+3 - Console logging level - 2 ???
 - Abrir Web console
 - Limpar localStorage
 
