@@ -24,7 +24,7 @@ while station.isconnected() == False:
   pass
 
 print('Connection successful')
-print(station.ifconfig())
+print("IP: " + station.ifconfig()[0])
 
 led = Pin(2, Pin.OUT)
 
