@@ -1,6 +1,6 @@
-import network, socket
+import network, socket, time
 
-tamnho_chunk = 512
+tamnho_chunk = 1024*16
 
 #############################
 # Conectar/Criar rede Wi-Fi #
@@ -10,19 +10,18 @@ sta_if.active(True)
 sta_if.scan()
 sta_if.connect("TPLINK", "gregorio@2012")
 #sta_if.connect("Welwitschia Mirabilis", "tigre?2018@")
+
+####################
+# Espera a conexao #
+####################
 while sta_if.isconnected() == False:
-    print('conectando...')
+    print('Conectando...')
+    time.sleep(1)
     pass
 
 #print('Coxeão a rede WiFi %s estabelecida' % ssid)
 print('IP: ' + sta_if.ifconfig()[0])  # Mostra dados da conexão
 
-
-####################
-# Espera a conexao #
-####################
-while not sta_if.isconnected():
-    pass
 
 
 ############################
@@ -62,6 +61,9 @@ while True:
     if "GET / " in request:
         file_path = "/data/index.html"
         content_type = "text/html"
+    elif 'GET /update ' in request:
+        file_path = '/data/update.html'
+        content_type = 'text/html'      
     elif "GET /style.css " in request:
         file_path = "/data/style.css"
         content_type = "text/css"

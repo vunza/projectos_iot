@@ -46,14 +46,20 @@ while True:
     print('Request:', request)
 
     if 'GET / ' in request:
-        file_path = '/index.html'
+        file_path = '/data/index.html'
         content_type = 'text/html'
     elif 'GET /style.css ' in request:
-        file_path = '/style.css'
+        file_path = '/data/style.css'
         content_type = 'text/css'
     elif 'GET /script.js ' in request:
-        file_path = '/script.js'
+        file_path = '/data/script.js'
         content_type = 'application/javascript'
+    elif 'GET /update ' in request:
+        file_path = '/data/update.html'
+        content_type = 'text/html'  
+    elif "GET /favicon.ico " in request:
+        file_path = "data:image/x-icon;base64,AAAB AAAAA".encode('utf-8')
+        content_type = "image/x-icon"         
     else:
         file_path = None
         content_type = 'text/plain'

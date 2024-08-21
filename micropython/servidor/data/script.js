@@ -70,6 +70,8 @@ async function CriarDevice(Id) {
     // Tira o último digito
     const tipo = Id % 10;
     let container = document.getElementById('card_wrapper');
+
+    let cards_container = document.getElementById('cards_container');
     
     // Checar se o elemento ja existe
     const dev = document.getElementById(Id + 100);
@@ -77,6 +79,12 @@ async function CriarDevice(Id) {
         return;
     }
  
+    cards_container.innerHTML += `
+        <div id=${Id + 100} class="card temperature">
+            <h4><i class="fas fa-thermometer-half"></i> BOARD #1 - TEMPERATURE</h4>
+            <p><span class="reading"><span id="t1"></span> &deg;C</span></p>
+            <p class="packet">Reading ID: <span id="rt1"></span></p>
+        </div>`;
         
         
     if(tipo == 1){ // LAMPADA
